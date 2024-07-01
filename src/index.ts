@@ -6,7 +6,7 @@ import { connectDatabase } from './infra/database/database';
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import * as steps from './steps/task1.task.js';
+import * as steps from './tasks/task1.task.js';
 
 const rootDir = process.cwd();
 
