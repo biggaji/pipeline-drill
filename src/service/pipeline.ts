@@ -1,17 +1,24 @@
 import { Types } from 'mongoose';
-import { Pipeline } from '../model/pipeline.model.js';
+import { Pipeline } from '../model/pipeline.js';
 import { pipelineStatusEnum } from '../enum/pipeline.enum.js';
 import stepRegistry from '../registry/registry.js';
+import { pipelineQueue } from '../infra/queue/queue.js';
 
+/**
+ * @class PipelineService
+ * @description Manages a pipeline lifecycle
+ */
 export default class PipelineService {
-  public pipelineName: string;
+  public pipelineName?: string = 'PipeQ';
 
-  constructor(pipelineName: string) {
+  constructor(pipelineName?: string) {
     this.pipelineName = pipelineName;
   }
 
   /**
-   * Creates a new pipeline
+   * @method createPipeline
+   * @description Creates a new pipeline
+   * @memberof PipelineService
    * @param steps
    * @returns
    */
@@ -31,7 +38,9 @@ export default class PipelineService {
   }
 
   /**
-   * Starts a pipeline workflow
+   * @method startPipeline
+   * @description Starts a pipeline workflow
+   * @memberof PipelineService
    * @param pipelineId
    */
   async startPipeline(pipelineId: Types.ObjectId) {
@@ -46,7 +55,13 @@ export default class PipelineService {
       // Add steps to work queue
       for (const step of pipeline.steps) {
         if (step.status === pipelineStatusEnum.PENDING) {
-          // Add to queue
+          const workerPayload = {
+            pipelineId,
+            stepName: step.name,
+            stepParams: step.params,
+          };
+
+          await pipelineQueue.add('pipeline', workerPayload);
         }
       }
     } catch (error) {
@@ -54,8 +69,12 @@ export default class PipelineService {
     }
   }
 
-  // Restart Pipeline
-
+  /**
+   * @method restartPipeline
+   * @description Restarts a failed or successful pipeline
+   * @memberof PipelineService
+   * @param pipelineId
+   */
   async restartPipeline(pipelineId: Types.ObjectId) {
     try {
       const pipeline = await Pipeline.findById(pipelineId);
@@ -81,15 +100,19 @@ export default class PipelineService {
     }
   }
 
-  // Execute steps
-
   /**
-   * Executes each steps within a pipeline
+   * @method executeStep
+   * @description Executes each steps within a pipeline
+   * @memberof PipelineService
    * @param pipelineId
    * @param stepName
    * @param stepParams
    */
-  async executeSteps(pipelineId: Types.ObjectId, stepName: string, stepParams: any) {
+  async executeStep(
+    pipelineId: Types.ObjectId,
+    stepName: string,
+    stepParams: any,
+  ) {
     try {
       const pipeline = await Pipeline.findById(pipelineId);
       if (!pipeline) {
@@ -121,19 +144,23 @@ export default class PipelineService {
       }
 
       // Update the pipeline status if every step has a completed status
-      if (pipeline.steps.every((s) => s.status === pipelineStatusEnum.COMPLETED)) {
+      if (
+        pipeline.steps.every((s) => s.status === pipelineStatusEnum.COMPLETED)
+      ) {
         pipeline.status = pipelineStatusEnum.COMPLETED;
         await pipeline.save();
       }
+
+      return 'done';
     } catch (error) {
       throw error;
     }
   }
 
-  // Perform step
-
   /**
-   * Uses the step registry functions to execute each steps
+   * @method performStep
+   * @description Uses the step registry functions to execute each steps
+   * @memberof PipelineService
    * @param stepName
    * @param stepParams
    */
@@ -145,6 +172,7 @@ export default class PipelineService {
       }
 
       await stepFunction(stepParams);
+      return;
     } catch (error) {
       throw error;
     }
