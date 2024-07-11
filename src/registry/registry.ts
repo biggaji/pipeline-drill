@@ -2,20 +2,18 @@
  * Imports steps functions from all over and define a single registry object to export and use
  */
 
-type TaskFunction = (params: any) => Promise<any>;
+import * as UserActionTasks from '../tasks/base.task.js';
 
 interface StepRegistry {
   [key: string]: TaskFunction;
 }
 
 const stepRegistry: StepRegistry = {
-  'Upload Profile Image': async (): Promise<any> => {
-    return await '';
-  },
-  // 'Verify Gov ID': verificationTasks.verifyGovId,
-  // 'Update Profile': verificationTasks.updateUserProfile,
-  // 'Deactivate Account': deactivationTasks.deactivateAccount,
-  // 'Notify User': deactivationTasks.notifyUser,
+  'Greet User': UserActionTasks.greetUser,
+  'Fetch Todo': UserActionTasks.fetchTodoById,
+  'Say Bye': UserActionTasks.sayByeToUser,
+  'Name Data': UserActionTasks.dataName,
 };
 
+export type TaskFunction = (params: any) => Promise<any>;
 export default stepRegistry;
