@@ -45,8 +45,8 @@ const fetchTodoById: TaskFunction = async (id: any) => {
   }
 };
 
-const dataName: TaskFunction = async (params: { name: string }) => {
-  console.log(params.name);
+const printInfo: TaskFunction = async (params: { info: string }) => {
+  console.log(params.info);
 };
 
-export { greetUser, sayByeToUser, fetchTodoById, dataName };
+export { greetUser, sayByeToUser, fetchTodoById, printInfo };
